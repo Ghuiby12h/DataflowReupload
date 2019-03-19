@@ -1,0 +1,61 @@
+/**
+ * Document: MaxCompiler Tutorial (maxcompiler-tutorial.pdf)
+ * Chapter: 6
+ * Example: 3
+ * Summary:
+ *        Kernel that doubles values in a vector.
+ */
+package vectors;
+
+import com.maxeler.maxcompiler.v2.kernelcompiler.Kernel;
+import com.maxeler.maxcompiler.v2.kernelcompiler.KernelParameters;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEVar;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.base.DFEType;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.composite.DFEVector;
+import com.maxeler.maxcompiler.v2.kernelcompiler.types.composite.DFEVectorType;
+import com.maxeler.maxcompiler.v2.kernelcompiler.stdlib.KernelMath;
+
+class VectorsKernel extends Kernel {
+    
+    
+    private static final DFEType type = dfeFloat(8,24);
+
+	VectorsKernel(KernelParameters parameters, int vectorSize) {
+		super(parameters);
+
+		DFEVectorType<DFEVar> vectorType = new DFEVectorType<DFEVar>(type, vectorSize);
+
+		// Input
+		DFEVector<DFEVar> x = io.input("x", vectorType);
+		DFEVector<DFEVar> y = io.input("y", vectorType);
+		
+		DFEVar sum_x = constant.var(type, 0);
+		DFEVar sum_x2 = constant.var(type, 0);
+		DFEVar sum_y = constant.var(type, 0);
+		DFEVar sum_y2 = constant.var(type, 0);
+		DFEVar sum_xy = constant.var(type, 0);
+
+		// Explicitly double each vector element
+		DFEVector<DFEVar> doubledVector =
+			vectorType.newInstance(this);
+
+		for (int i = 0; i < vectorSize; i++){
+			sum_x += x[i];
+			sum_x2 += x[i] * x[i];
+			sum_y += y[i];
+			sum_y2 += y[i] * y[i];
+			sum_xy += x[i] * y[i];
+		}
+		
+		DFEVar denom = vectorSize * sum_x2 - sum_x * sum_x;
+		DFEVar b = (vectorSize * sum_xy - sum_x * sum_y) / denom;
+		DFEVar m = (sum_y * sum_x2 - sum_x * sum_xy) / denom;
+		DFEVar r = (sum_xy - sum_x * sum_y / vectorSize) / KernelMath.sqrt((sum_x2 - sum_x * sum_x / vectorSize) * (sum_y2 - sum_y * sum_y / vectorSize));
+
+		//Output
+		io.output("m", m, type);
+		io.output("b", b, type);
+		io.output("r", r, type);
+	}
+
+}
